@@ -3,13 +3,12 @@ import Cropper from "react-easy-crop";
 import { useDropzone } from "react-dropzone";
 import getCroppedImg from "../utils/cropImage";
 
-function ImageCropper() {
+function ImageCropper({ onCrop }) {
   const [rotation, setRotation] = useState(0);
   const [image, setImage] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  const [croppedImage, setCroppedImage] = useState(null);
 
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -29,12 +28,17 @@ function ImageCropper() {
 
   const showCroppedImage = useCallback(async () => {
     try {
-      const cropped = await getCroppedImg(image, croppedAreaPixels, rotation); // Add rotation
-      setCroppedImage(cropped);
+      const cropped = await getCroppedImg(image, croppedAreaPixels, rotation);
+      if (onCrop) onCrop(cropped); // send to parent
     } catch (e) {
       console.error(e);
     }
-  }, [image, croppedAreaPixels, rotation]);
+  }, [image, croppedAreaPixels, rotation, onCrop]);
+
+  const resetCropper = () => {
+    setImage(null);
+    if (onCrop) onCrop(null); // clear in parent
+  };
 
   return (
     <div className="w-full max-w-4xl flex flex-col gap-4 items-center">
@@ -86,34 +90,13 @@ function ImageCropper() {
               Crop & Show
             </button>
             <button
-              onClick={() => {
-                setImage(null);
-                setCroppedImage(null);
-              }}
+              onClick={resetCropper}
               className="bg-red-500 px-4 py-2 rounded text-white"
             >
               Reset
             </button>
           </div>
         </>
-      )}
-
-      {croppedImage && (
-        <div className="flex flex-col items-center">
-          <p className="text-lg font-medium mb-2">Cropped Image:</p>
-          <img
-            src={croppedImage}
-            alt="Cropped"
-            className="rounded border border-gray-700"
-          />
-          <a
-            href={croppedImage}
-            download="cropped-image.png"
-            className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
-          >
-            Download
-          </a>
-        </div>
       )}
     </div>
   );
